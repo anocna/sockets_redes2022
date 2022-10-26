@@ -1,0 +1,11 @@
+# depslib dependency file v1.0
+1584205420 source:c:\users\administrador\desktop\unla\redes y comunicaciones\tp\p_servidor\main.c
+	<stdio.h>
+	<stdlib.h>
+
+1666821623 source:c:\users\administrador\desktop\unla\redes y comunicaciones\tp\p_servidor\servidor.c
+	<stdio.h>
+	<winsock2.h>
+	<string.h>
+	<stdlib.h>
+

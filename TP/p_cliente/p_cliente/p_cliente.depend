@@ -1,0 +1,6 @@
+# depslib dependency file v1.0
+1666807672 source:c:\users\administrador\desktop\unla\redes y comunicaciones\tp\p_cliente\p_cliente\cliente.c
+	<stdio.h>
+	<winsock2.h>
+	<string.h>
+
