@@ -2,7 +2,6 @@
 /*********************PROGRAMA CLIENTE*********************/
 /***********************************************************/
 
-
 #include <stdio.h>
 #include <winsock2.h>
 #include <string.h>
@@ -113,6 +112,9 @@ int main(int argc, char **argv){
 	system("cls");
 	
 	}while(inicio);
+	
+	printf("	\nSe ha desconectado del servidor.\n");
+	system("pause");
 
 	return 0;
 }
@@ -183,15 +185,17 @@ void op_uno(){
 
 	mensaje[recv_size] = '\0';	
 
-	/*if(!strcmp(mensaje,"inactivo")){
-			
-		printf("Cliente desconectado por inactividad\n");
+	if(!strcmp(mensaje,"inactivo")){
+		
+		system("cls");	
+		printf("	Cliente desconectado por inactividad\n");
 		aux=3;
 		
-	}else{*/
+	}else{
 		printf("	Resultado: %s\n\n", mensaje);
-	//}
+	}
 	
+	memset(mensaje,'\0',100);
 	system("pause");
 	
 }
@@ -203,7 +207,7 @@ void op_dos(){
     system("cls");
     	    
     /**********************ENVIAR UN MENSAJE*********************/
-    if(send(skt, "logs", strlen(mensaje), 0) < 0){
+    if(send(skt, "logs", sizeof("logs"), 0) < 0){
 		printf("	Error al enviar mensaje\n");
 		exit(-1);
 	}
@@ -215,24 +219,28 @@ void op_dos(){
 		
     	while(!auxfin){
     		
-    		/**********************RECEPCION DE MENSAJE*********************/
-	    	//printf("Esperando respuesta entrante...\n");
-	    	
+    		/**********************RECEPCION DE MENSAJE*********************/    	
 	    	if((recv_size = recv(skt, mensaje, 200, 0)) == SOCKET_ERROR)
 	    		printf("Recepcion fallida\n");
 	    		
-	    	/*if(!strcmp(mensaje,"inactivo")){
-					
-						printf("\nentro a estar inactivoooooo \n--> %s\n\n", mensaje); // verrrrrrrrrrrrrr
-						aux=3;
-					
-			}else{*/
+	    	mensaje[recv_size] = '\0';
+	    		
+	    	if(!strcmp(mensaje,"inactivo")){
 			
-    			if(!strcmp(mensaje,"FEOF"))
+				printf("	Cliente desconectado por inactividad\n");
+				aux=3;
+				auxfin=1;
+				
+		
+			}else{
+				
+				if(!strcmp(mensaje,"FEOF"))
 					auxfin=1;
 				
 				printf("%s", mensaje);
-			//}
+    		
+			}
+			
 		}
 		printf(".\n");
 		system("pause");
