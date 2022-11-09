@@ -18,7 +18,7 @@ int buscarOp1(char str[20]);
 int buscarOp2(char str[20]);
 int valOperacion(const char* str);
 
-char * tiempo();
+char * tiempo(char * t);
 time_t current_time = 0;
 char c, posError[3]="";
 
@@ -54,7 +54,6 @@ int main(int argc, char **argv)
 
 
 
-
     /**********************Creacion Socket **********************/
     printf("%s: ==============================\n",tiempo(t));
     fprintf(archivoEscribir,"%s: ==============================\n",tiempo(t)); //en log
@@ -75,10 +74,10 @@ int main(int argc, char **argv)
     server.sin_addr.s_addr = INADDR_ANY; // Cualquier cliente puede conectarse
 
 
-    /********************** Inactividad **********************
-    DWORD timeout = 10 * 1000;
+    /********************** Inactividad **********************/
+    DWORD timeout = 12000;
     setsockopt(skt, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout));
-*/
+
 
     /********************** Bind **********************/
     if(bind(skt, (struct sockaddr*)&server, sizeof(server)) == SOCKET_ERROR)
@@ -89,7 +88,8 @@ int main(int argc, char **argv)
     printf("Bind realizado\n");
 
 
-    while(aux==1){
+    while(aux==1)
+    {
 
         listen(skt, 5);
         printf("Esperando conexiones entrantes...\n");
@@ -118,13 +118,14 @@ int main(int argc, char **argv)
         while(aux==0)
         {
 
+            memset(mensaje,'\0',100);
 
             printf("Esperando mensaje entrante...\n");
-            if((recv_size = recv(skt2, mensaje, 20, 0)) == SOCKET_ERROR){
-                printf("Recepcion fallida\n");
-
-                 //if(WSAGetLastError() == WSAETIMEDOUT)
-                   //             inactivo = 1;
+            if((recv_size = recv(skt2, mensaje, 20, 0)) == SOCKET_ERROR)
+            {
+                if(WSAGetLastError() == WSAETIMEDOUT)
+                    inactivo = 1;
+                printf("!!! Cliente inactivo. \n");
             }
 
 
@@ -135,46 +136,65 @@ int main(int argc, char **argv)
 
             if(!strcmp(mensaje,"cerrar"))
             {
+                system("cls");
                 aux=1;
-                printf("El Cliente se ha desconectado.\n");
-                fprintf(archivoEscribir, "El Cliente se ha desconectado.\n"); // en log
+                printf("\nEl Cliente se ha desconectado.\n");
+                fprintf(archivoEscribir, "%s: El Cliente se ha desconectado.\n",tiempo(t));
 
             }
 
 
             /********************** OPCION 2 - MOSTRAR LOGS **********************/
 
-            if(!strcmp(mensaje,"logs")){
+            if(!strcmp(mensaje,"logs"))
+            {
 
-                printf("\n------- entro al logsss  --------\n");
+                mensaje[recv_size] = '\0';
 
+                if(inactivo)
+                {
 
-                printf("\n------- entro al else de leer archivo--------\n");
+                    strcpy(mensaje,"inactivo");
 
-                archivoLeer = fopen("server.log", "r");
+                    if(send(skt2, mensaje, strlen(mensaje), 0) < 0)
+                    {
+                        printf("Error al enviar mensaje\n");
+                        exit(-1);
+                    }
 
-                while(!feof(archivoLeer)){
+                    printf("\n Inactividad enviada exitosamente\n");
 
-                    fgets(leer, 100, archivoLeer);
+                    aux=1;
+
+                }
+                else
+                {
+
+                    archivoLeer = fopen("server.log", "r");
+
+                    while(!feof(archivoLeer))
+                    {
+                        fgets(leer, 100, archivoLeer);
+                        if(send(skt2, leer, sizeof(leer), 0) < 0)
+                        {
+                            printf("Error al enviar mensaje\n");
+                            exit(-1);
+                        }
+
+                    }
+
+                    strcpy(leer,"FEOF");
                     if(send(skt2, leer, sizeof(leer), 0) < 0)
                     {
                         printf("Error al enviar mensaje\n");
                         exit(-1);
                     }
 
+                    printf("\nLog enviado.\n");
+
+                    fclose(archivoLeer);
 
                 }
-
-                strcpy(leer,"FEOF");
-                if(send(skt2, leer, sizeof(leer), 0) < 0)
-                {
-                    printf("Error al enviar mensaje\n");
-                    exit(-1);
-                }
-
-                printf("\nLog enviado.\n");
-
-                fclose(archivoLeer);
 
             }
 
@@ -186,9 +206,6 @@ int main(int argc, char **argv)
 
             if(!strcmp(mensaje,"calculo"))
             {
-
-                printf("calcular act. mensaje: %s\n",mensaje);
-
                 printf("Esperando mensaje entrante...\n");
 
                 if((recv_size = recv(skt2, mensaje, 20, 0)) == SOCKET_ERROR)
@@ -197,7 +214,8 @@ int main(int argc, char **argv)
                 mensaje[recv_size] = '\0';
 
 
-                /*if(inactivo){
+                if(inactivo)
+                {
 
                     strcpy(mensaje,"inactivo");
 
@@ -207,82 +225,69 @@ int main(int argc, char **argv)
                         exit(-1);
                     }
 
-                    printf("\ninactividad enviada exitosamente\n");
+                    printf("\n Inactividad enviada exitosamente\n");
 
                     aux=1;
-
-                    //break;
-                }*/
-
-
-                //Validación de caracteres de la operación
-                if(valCaracter(mensaje))
-                {
-                    strcpy(mensaje,"No se pudo realizar la operacion, se encontro un caracter no contemplado:  ");
-                    mensaje[strlen(mensaje+1)] = c;
-
-                    if(send(skt2, mensaje, strlen(mensaje), 0) < 0)
-                    {
-                        printf("Error al enviar mensaje\n");
-                        exit(-1);
-                    }
-
-                    printf("\nRespuesta fallo caracter enviada exitosamente\n");
 
                 }
                 else
                 {
 
 
-                    //Validación de operación mal formada
-                    if(valOperacion(mensaje))
+                    //Validación de caracteres de la operación
+                    if(valCaracter(mensaje))
                     {
-
-                        strcpy(mensaje,"No se pudo realizar la operacion, la operacion esta mal formada: ");
-
-                        strcat(mensaje,posError);
+                        strcpy(mensaje,"No se pudo realizar la operacion, se encontro un caracter no contemplado:  ");
+                        mensaje[strlen(mensaje+1)] = c;
 
                         if(send(skt2, mensaje, strlen(mensaje), 0) < 0)
                         {
                             printf("Error al enviar mensaje\n");
                             exit(-1);
                         }
-
 
                     }
                     else
                     {
-
-                        /********************** Calculo **********************/
-
-                        printf("\n------- entro al realizar la operacion --------\n");
-
-                        op1 = buscarOp1(mensaje);
-
-                        op2 = buscarOp2(mensaje);
-
-                        itoa(calculo(op1,op2,mensaje[buscarSigno(mensaje)]),mensaje,10);
-
-                        if(send(skt2, mensaje, strlen(mensaje), 0) < 0)
+                        //Validación de operación mal formada
+                        if(valOperacion(mensaje))
                         {
-                            printf("Error al enviar mensaje\n");
-                            exit(-1);
+
+                            strcpy(mensaje,"No se pudo realizar la operacion, la operacion esta mal formada: ");
+
+                            strcat(mensaje,posError);
+
+                            if(send(skt2, mensaje, strlen(mensaje), 0) < 0)
+                            {
+                                printf("Error al enviar mensaje\n");
+                                exit(-1);
+                            }
+
                         }
+                        else
+                        {
 
-                        printf("Respuesta de calculo enviada exitosamente\n");
+                            /********************** Calculo **********************/
 
+                            op1 = buscarOp1(mensaje);
+
+                            op2 = buscarOp2(mensaje);
+
+                            itoa(calculo(op1,op2,mensaje[buscarSigno(mensaje)]),mensaje,10);
+
+                            if(send(skt2, mensaje, strlen(mensaje), 0) < 0)
+                            {
+                                printf("Error al enviar mensaje\n");
+                                exit(-1);
+                            }
+
+                            printf("Respuesta del calculo enviada exitosamente\n");
+                        }
                     }
                 }
-
             }
-
         }
-        // inactividad aux=0 y se cierra el servidor
-        //printf("Conexion Cerrada por Inactividad.\n");
-        //fprintf(archivoEscribir, "Conexion Cerrada por Inactividad.\n");// en log
     }
-
-
 
     fclose(archivoEscribir);
     closesocket(skt);
